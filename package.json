@@ -1,7 +1,7 @@
 {
   "name": "opencode-copilot-chat",
-  "displayName": "OpenCode for Copilot Chat — BYOK 30+ AI Models",
-  "description": "Use 30+ frontier AI models (DeepSeek V4, Kimi K2.6, GLM-5.1, Qwen3.7, MiMo V2.5, MiniMax M2.7, free Claude Opus, GPT-5.5, Gemini 3.5, Grok) in GitHub Copilot Chat. Bring Your Own Key — no Copilot Pro needed.",
+  "displayName": "OpenCode for Copilot Chat: BYOK 30+ AI Models",
+  "description": "Use 30+ frontier AI models (DeepSeek V4, Kimi K2.6, GLM-5.1, Qwen3.7, MiMo V2.5, MiniMax M2.7, free Claude Opus, GPT-5.5, Gemini 3.5, Grok) in GitHub Copilot Chat. Bring Your Own Key, no Copilot Pro needed.",
   "version": "0.7.5",
   "publisher": "ltmoerdani",
   "license": "MIT",
@@ -146,9 +146,9 @@
             "extension"
           ],
           "enumDescriptions": [
-            "Merge the OpenCode CLI history (cost + tokens + requests) with the extension's own tracked requests — the most accurate view when you also use OpenCode in the terminal.",
-            "OpenCode CLI history only — ignores requests the extension tracked itself.",
-            "Extension-tracked requests only — ignores the OpenCode CLI history."
+            "Merge the OpenCode CLI history (cost + tokens + requests) with the extension's own tracked requests: the most accurate view when you also use OpenCode in the terminal.",
+            "OpenCode CLI history only; ignores requests the extension tracked itself.",
+            "Extension-tracked requests only; ignores the OpenCode CLI history."
           ],
           "default": "auto",
           "description": "Data source for the Today / Yesterday usage rows."
@@ -303,17 +303,17 @@
           ],
           "enumDescriptions": [
             "Fastest verified option: enable_thinking=false yields ~1.5s with zero hidden reasoning.",
-            "Qwen3.6 hybrid — same non-thinking mode, slightly larger context budget.",
-            "Qwen3.7 hybrid — newest Qwen on OpenCode Go, same non-thinking behavior.",
-            "Works but measurably slower — burns hidden reasoning tokens even with thinking off (~2s+)."
+            "Qwen3.6 hybrid: same non-thinking mode, slightly larger context budget.",
+            "Qwen3.7 hybrid: newest Qwen on OpenCode Go, same non-thinking behavior.",
+            "Works but measurably slower; burns hidden reasoning tokens even with thinking off (~2s+)."
           ],
           "default": "qwen3.5-plus",
-          "markdownDescription": "Model used for inline code suggestions. Prefer the non-thinking Qwen options — measured: `qwen3.5-plus` with `enable_thinking=false` returns in ~1.5s with zero hidden reasoning, while reasoning models (e.g. `deepseek-v4-flash`) burn 100+ reasoning tokens even with thinking off."
+          "markdownDescription": "Model used for inline code suggestions. Prefer the non-thinking Qwen options. Measured: `qwen3.5-plus` with `enable_thinking=false` returns in ~1.5s with zero hidden reasoning, while reasoning models (e.g. `deepseek-v4-flash`) burn 100+ reasoning tokens even with thinking off."
         },
         "opencodego.inlineSuggestionsChatInput": {
           "type": "boolean",
           "default": false,
-          "description": "Also offer inline suggestions inside the GitHub Copilot Chat prompt box while typing prompts. Off by default — completions are meant for code editors."
+          "description": "Also offer inline suggestions inside the GitHub Copilot Chat prompt box while typing prompts. Off by default; completions are meant for code editors."
         },
         "opencodego.inlineSuggestionsDebounceMs": {
           "type": "number",
