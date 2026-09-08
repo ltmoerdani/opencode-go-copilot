@@ -1,6 +1,27 @@
 # 🧠 OPENCODE COPILOT CHAT DEVLOG
 
-**Branch:** `fix/issues-216-223-batch` | **Updated:** 2026-09-08 Asia/Jakarta | **Current Phase:** v0.7.5 batch — 5 fixes + 2 triages (#216/#217/#220/#221/#222 + #218/#223) on branch `fix/issues-216-223-batch`, pending PR.
+**Branch:** `fix/issues-216-223-batch` | **Updated:** 2026-09-08 Asia/Jakarta | **Current Phase:** v0.7.5 batch verified — 5 fixes + 2 triages (#216/#217/#220/#221/#222 + #218/#223), manual + automated verification passed, pending PR.
+
+---
+
+## ✅ Manual + automated verification (2026-09-08)
+
+User ran the manual checklist against a live build; results all green:
+
+| Check                                                                                                                                                                   | Result |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| #222 A/B/C — no log spam, zero `GET /models` during session, Refresh Models still fetches + filters                                                                     | ✅     |
+| #220 — after 8 requests the Output dropdown still shows exactly one `OpenCode` channel                                                                                  | ✅     |
+| #216/#217 — 9 chained luna tool-call turns (multi-parallel `read_file`/`runSubagent`), all 200, no `No tool output found`, no empty-response loop, usage/cache recorded | ✅     |
+| Regression — per-model thinking resolves (`thinkingSource=modelConfiguration`), Go usage recording + status bar update (`entries=1..9`)                                 | ✅     |
+
+Follow-up commits after verification:
+
+- `ac7a9a1` — suppress `[diag-empty-response]` false positive on healthy tool-call-only turns (tool calls flush after the diagnostic runs; now gated on a healthy `finish_reason`).
+- `b99f449` / `25f0301` — regression suites automating the checklist: history-trim × pairing invariants, the real luna event shapes (flat + nested `output_text.delta`, tool-call sequence), and header-capture tests pinning `x-opencode-session` on `GET /models`, inline completions, and `GET /usage`.
+- `418c4c4` — after the gateway enforcement tip (docs/go updated 2026-09-07): all four auxiliary fetch sites now send `x-opencode-session` (persisted per-installation id); chat path keeps the per-conversation id.
+
+Suite: 462/462 unit tests, full lint gate pass.
 
 ---
 
