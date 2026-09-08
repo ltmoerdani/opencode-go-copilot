@@ -491,7 +491,20 @@ export async function streamOpenCodeResponse(options: StreamOpenCodeResponseOpti
     // extractor found nothing, dump raw SSE data to identify format mismatches.
     // This helps diagnose issues like #93 where the model generates tokens
     // but the response content is in an unrecognized format.
-    if (usageSummary.completionTokens && usageSummary.completionTokens > 0 && extractedPartCount === 0 && rawSseData.length > 0) {
+    //
+    // ISSUE #217 follow-up: skip the dump when a healthy finish_reason was
+    // extracted. Tool-call responses on the Responses API (gpt-5.6-luna) emit
+    // parts via the transport's finally flush AFTER this block runs, so
+    // extractedPartCount is legitimately 0 here while the stream is perfectly
+    // healthy — the dump would false-positive on every tool-call turn.
+    const healthyFinish = typeof usageSummary.finishReason === "string" && usageSummary.finishReason !== "error";
+    if (
+      usageSummary.completionTokens &&
+      usageSummary.completionTokens > 0 &&
+      extractedPartCount === 0 &&
+      !healthyFinish &&
+      rawSseData.length > 0
+    ) {
       options.output?.appendLine(
         `[diag-empty-response] model=${options.modelId} completionTokens=${String(usageSummary.completionTokens)} totalEvents=${String(totalEvents)} rawSseDataCount=${String(rawSseData.length)}`,
       );
