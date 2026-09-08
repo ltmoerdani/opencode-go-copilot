@@ -1,6 +1,24 @@
 # 🧠 OPENCODE COPILOT CHAT DEVLOG
 
-**Branch:** `main` | **Updated:** 2026-09-03 Asia/Jakarta | **Current Phase:** v0.7.4 batch — 6 community issue fixes (#204/#206/#207/#208/#213/#214) on branch `fix/issues-204-214-batch`, pending merge. Open: PR #161 (restore API key command).
+**Branch:** `fix/issues-216-223-batch` | **Updated:** 2026-09-08 Asia/Jakarta | **Current Phase:** v0.7.5 batch — 5 fixes + 2 triages (#216/#217/#220/#221/#222 + #218/#223) on branch `fix/issues-216-223-batch`, pending PR.
+
+---
+
+## ✅ Batch v0.7.5 — Seven Issues (#216 #217 #218 #220 #221 #222 #223) — 2026-09-08
+
+**Scope:** one branch (`fix/issues-216-223-batch`), atomic commits in triage-priority order, `closes #N` in each message. Deep-dive first: issue bodies, docs/issues 88–93, git history, published 0.7.4 VSIX extraction, and local session history.
+
+| Issue | Root cause (verified in code/artifact)                                                         | Fix                                                                                  | Commit    |
+| ----- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | --------- |
+| #222  | `MODEL_LIST_CACHE_TTL_MS` only consulted on failure path → live `GET /models` every UI poll    | Cache-first `fetch()`, `invalidate()` for Refresh Models, log-on-change registration | `9f0eba9` |
+| #220  | `createOutputChannel("OpenCode")` inside per-request `prepareChatRequest()` (refactor fallout) | Shared lazy-singleton channel from provider; field removed from chatPrep             | `5d2b525` |
+| #216  | Fabricated `tool-<ts>` call_id + unpaired function_call/output items after trim → gateway 400  | No fabricated ids; `pairResponsesFunctionCallItems()` 1:1 pairing pass + 5 tests     | `ed53ecb` |
+| #217  | Nested Responses event payloads unrecognized → zero parts, Copilot loop guard (VSIX-verified)  | Nested delta unwrapping in routing normalizer + dedicated zero-part error            | `573f757` |
+| #221  | Upstream Console Go 429 hardened into failure despite Retry-After                              | `parseRetryAfterMs` + single transparent retry (≤30 s, pre-stream)                   | `8d8e9f0` |
+| #218  | VS Code default-model dropdowns whitelist native providers only (doc 32)                       | Triage doc; Configure Utility Models remains the user path                           | docs      |
+| #223  | Stack trace belongs to `vizards.deepseek-v4-for-copilot`, not this extension                   | Triage doc; our requests always carry `x-opencode-session`                           | docs      |
+
+Docs: `docs/issues/94`–`99`, CHANGELOG 0.7.5, version bump 0.7.4 → 0.7.5.
 
 ---
 
