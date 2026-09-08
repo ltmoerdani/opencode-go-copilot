@@ -9,7 +9,7 @@
  */
 import * as vscode from "vscode";
 import { lookupModelRegistryEntry } from "../core/registry";
-import { buildResponsesRequestEnvelope, responsesInputItemsFromMessage } from "../responsesRequest";
+import { buildResponsesRequestEnvelope, pairResponsesFunctionCallItems, responsesInputItemsFromMessage } from "../responsesRequest";
 import { thinkingProviderFor } from "../thinking";
 import { sanitizeToolSchema } from "./schema";
 import { messagesHaveImages } from "./shared";
@@ -52,7 +52,10 @@ export function buildResponsesRequestBody(
   metadata: ResolvedModelMetadata,
   limits: ModelLimits,
 ): Record<string, unknown> {
-  const input = messages.flatMap((message) => responsesInputItemsFromMessage(message));
+  // ISSUE #216: drop function_call / function_call_output items that lost
+  // their partner (history trim, lost tool_call_id) — the upstream rejects
+  // the whole request otherwise.
+  const input = pairResponsesFunctionCallItems(messages.flatMap((message) => responsesInputItemsFromMessage(message)));
   const tools = mapResponsesTools(options.tools, modelId);
   const thinkingPayload = thinkingProviderFor(modelId).buildPayload(settings.thinking, {
     hasImageInput: messagesHaveImages(messages),

@@ -65,6 +65,7 @@ export async function fetchGoUsage(
   fetcher: typeof fetch = fetch,
   timeoutMs: number = GO_USAGE_FETCH_TIMEOUT_MS,
   endpointUrl: string = GO_USAGE_API_URL,
+  sessionId?: string,
 ): Promise<GoUsageSyncResult> {
   if (!apiKey) {
     return { ok: false, reason: "no-key" };
@@ -73,7 +74,13 @@ export async function fetchGoUsage(
   try {
     response = await fetcher(endpointUrl, {
       method: "GET",
-      headers: { Authorization: `Bearer ${apiKey}` },
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        // Gateway enforcement (docs/go): auxiliary OpenCode requests also need
+        // a stable session id. No conversation here — caller supplies the
+        // persisted per-installation id.
+        ...(sessionId ? { "x-opencode-session": sessionId } : {}),
+      },
       signal: AbortSignal.timeout(timeoutMs),
     });
   } catch {

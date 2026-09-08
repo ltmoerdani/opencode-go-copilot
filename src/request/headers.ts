@@ -1,8 +1,34 @@
 import * as vscode from "vscode";
+import { randomUUID } from "node:crypto";
 import { OPEN_CODE_CLIENT } from "../config";
 import { getUserAgent } from "../provider/definitions";
 import { messageText } from "../provider/tokens";
 import { isRecord } from "../utils";
+
+// OpenCode Go gateway enforcement (docs/go, updated 2026-09-07): every request
+// to the gateway should carry a stable `x-opencode-session`. The main chat
+// path builds a per-conversation id in buildOpenCodeRequestHeaders(); the
+// auxiliary requests below (/models, /usage, test-connection, inline
+// completions) have no conversation, so they share one persisted
+// per-installation id instead.
+
+/** globalState key for the persisted auxiliary session id. */
+const AUX_SESSION_STATE_KEY = "opencode.auxSessionId";
+
+/**
+ * Stable per-installation session id for auxiliary gateway requests that have
+ * no conversation context (/models, /usage, test connection, inline
+ * completions). Generated once and persisted in globalState.
+ */
+export function auxiliarySessionId(context: vscode.ExtensionContext): string {
+  const existing = context.globalState.get<string>(AUX_SESSION_STATE_KEY);
+  if (existing && existing.trim()) {
+    return cleanHeaderValue(existing);
+  }
+  const id = cleanHeaderValue(`vscode-aux-${randomUUID()}`);
+  void context.globalState.update(AUX_SESSION_STATE_KEY, id);
+  return id;
+}
 
 // The official OpenCode client sends these headers on every request. The Zen
 // gateway reads x-opencode-session first, then converts that sticky identifier

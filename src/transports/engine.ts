@@ -15,7 +15,12 @@ import {
   TRANSIENT_5XX_RETRY_BASE_MS,
   TRANSIENT_5XX_RETRY_JITTER_MS,
 } from "../retry";
-import { TRANSIENT_FETCH_MAX_RETRIES, TRANSIENT_FETCH_RETRY_BASE_MS, TRANSIENT_FETCH_RETRY_JITTER_MS } from "../config";
+import {
+  TRANSIENT_FETCH_MAX_RETRIES,
+  TRANSIENT_FETCH_RETRY_BASE_MS,
+  TRANSIENT_FETCH_RETRY_JITTER_MS,
+  RATE_LIMIT_MAX_RETRY_AFTER_WAIT_MS,
+} from "../config";
 import { createUsageDataParts } from "../chatParts";
 import {
   clearContextWindowRequest,
@@ -23,7 +28,7 @@ import {
   setContextWindowOutputBufferForRequest,
 } from "../contextWindowHookBridge";
 import { formatUsageLogLine } from "../usage/usage";
-import { getErrorMessage, sleepWithCancellation } from "../utils";
+import { getErrorMessage, parseRetryAfterMs, sleepWithCancellation } from "../utils";
 import { parseServerSentEvent, isStreamTruncated } from "./sse";
 import { reportProgressPart, type RequestUsageSummary, type StreamOpenCodeResponseOptions } from "./streamParts";
 import type { TransportRequestSummary } from "../core/transport";
@@ -50,6 +55,17 @@ const STREAM_FAILURE_MAX_RETRIES = 3;
  * temperature → images) can complete within one request.
  */
 const MAX_400_PATCH_ATTEMPTS = 3;
+
+/**
+ * Read the token flag through a function boundary: aliased-condition narrowing
+ * on `options.token.isCancellationRequested` (from earlier guards in
+ * streamOpenCodeResponse) makes direct reads look constant-false to
+ * `no-unnecessary-condition` even after an await, where cancellation can
+ * actually fire.
+ */
+function cancellationRequested(token: { readonly isCancellationRequested: boolean }): boolean {
+  return token.isCancellationRequested;
+}
 
 /**
  * Core streaming engine shared by every transport: performs the HTTP POST
@@ -318,6 +334,24 @@ export async function streamOpenCodeResponse(options: StreamOpenCodeResponseOpti
       throw new DOMException("Aborted", "AbortError");
     }
 
+    // --- 429 Retry-After retry (issue #221) ---
+    // Upstream provider rate limits (Console Go) often carry Retry-After.
+    // Honor it with a single bounded wait and one retry. Nothing has been
+    // streamed at this point, so the retry cannot duplicate chat content.
+    // Waits longer than RATE_LIMIT_MAX_RETRY_AFTER_WAIT_MS are surfaced as
+    // the normal 429 error instead of silently stalling the UI.
+    for (let rateLimitAttempt = 0; rateLimitAttempt < 1; rateLimitAttempt++) {
+      if (response.status !== 429 || options.token.isCancellationRequested) break;
+      const retryAfter = parseRetryAfterMs(response.headers.get("retry-after"));
+      if (retryAfter === undefined || retryAfter > RATE_LIMIT_MAX_RETRY_AFTER_WAIT_MS) break;
+      options.output?.appendLine(`[retry] 429 rate limited; honoring Retry-After, waiting ${String(retryAfter)}ms…`);
+      await sleepWithCancellation(retryAfter, options.token);
+      if (cancellationRequested(options.token)) break;
+      response = await fetchWithTransientRetry(payload);
+      consumedErrorBody = undefined;
+      options.output?.appendLine(`[retry] Response after rate-limit wait: ${String(response.status)} ${response.statusText}`);
+    }
+
     responseStatus = response.status;
     responseContentType = response.headers.get("content-type") ?? "";
     options.output?.appendLine(`[http] ${String(response.status)} ${response.statusText} content-type=${responseContentType || "<none>"}`);
@@ -457,7 +491,20 @@ export async function streamOpenCodeResponse(options: StreamOpenCodeResponseOpti
     // extractor found nothing, dump raw SSE data to identify format mismatches.
     // This helps diagnose issues like #93 where the model generates tokens
     // but the response content is in an unrecognized format.
-    if (usageSummary.completionTokens && usageSummary.completionTokens > 0 && extractedPartCount === 0 && rawSseData.length > 0) {
+    //
+    // ISSUE #217 follow-up: skip the dump when a healthy finish_reason was
+    // extracted. Tool-call responses on the Responses API (gpt-5.6-luna) emit
+    // parts via the transport's finally flush AFTER this block runs, so
+    // extractedPartCount is legitimately 0 here while the stream is perfectly
+    // healthy — the dump would false-positive on every tool-call turn.
+    const healthyFinish = typeof usageSummary.finishReason === "string" && usageSummary.finishReason !== "error";
+    if (
+      usageSummary.completionTokens &&
+      usageSummary.completionTokens > 0 &&
+      extractedPartCount === 0 &&
+      !healthyFinish &&
+      rawSseData.length > 0
+    ) {
       options.output?.appendLine(
         `[diag-empty-response] model=${options.modelId} completionTokens=${String(usageSummary.completionTokens)} totalEvents=${String(totalEvents)} rawSseDataCount=${String(rawSseData.length)}`,
       );
@@ -524,6 +571,20 @@ export async function streamOpenCodeResponse(options: StreamOpenCodeResponseOpti
           rateLimitSummary,
         });
         return;
+      }
+      // ISSUE #217: retries exhausted with zero usable parts while the
+      // gateway billed completion tokens — give the reporter a targeted
+      // message that names the likely cause and the diagnostic path.
+      if (extractedPartCount === 0 && usageSummary.completionTokens && usageSummary.completionTokens > 0) {
+        const zeroPartError = new OpenCodeRequestError(
+          `${options.providerDisplayName} consumed ${String(usageSummary.completionTokens)} completion tokens but returned no parsable content (${String(totalEvents)} events, ${String(totalBytes)} bytes${localRequestId ? `, request ${localRequestId}` : ""}).`,
+          `${options.providerDisplayName} generated output in a format this extension could not parse. Enable "Debug Reasoning" for this provider, retry once (the upstream may recover), and if it repeats, attach the [diag-sse-event-*] lines from the OpenCode Output channel to a bug report.`,
+        );
+        emitSummary(totalBytes, totalEvents, {
+          errorMessage: zeroPartError.message,
+          rateLimitSummary,
+        });
+        throw zeroPartError;
       }
       const requestError = new OpenCodeRequestError(
         `${options.providerDisplayName} response stream ended before completion (no [DONE] or finish_reason after ${String(totalBytes)} bytes / ${String(totalEvents)} events${localRequestId ? `, request ${localRequestId}` : ""}).`,

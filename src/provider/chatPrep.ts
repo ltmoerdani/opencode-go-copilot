@@ -80,7 +80,6 @@ export async function prepareChatRequest(
   limits: ReturnType<typeof modelLimits>;
   thinkingPayload: unknown;
   requestHeaders: Record<string, string>;
-  outputChannel: vscode.OutputChannel;
   onTransportSummary: (summary: TransportRequestSummary) => void;
 }> {
   // VS Code can invoke a cached selected model immediately after the
@@ -277,7 +276,11 @@ export async function prepareChatRequest(
     endpoint: routing.endpointKind === "messages" ? "messages" : routing.endpointKind === "responses" ? "responses" : "chat",
   });
   const requestHeaders = buildOpenCodeRequestHeaders(messages, options, rawModelId);
-  const outputChannel = vscode.window.createOutputChannel("OpenCode");
+  // NOTE: no output channel is created here. Channels are process-wide singletons
+  // (vscode.window.createOutputChannel registers a new Output-tab entry every
+  // call), so creating one per request flooded the Output tab with dozens of
+  // duplicate "OpenCode" channels (issue #220). Transports receive the
+  // provider's shared channel instead.
   const onTransportSummary = (summary: TransportRequestSummary) => {
     // Compute credits for VS Code session cost (1 credit = $0.01).
     // VS Code reads usage.copilotCredits from the LanguageModelDataPart
@@ -326,7 +329,6 @@ export async function prepareChatRequest(
     limits,
     thinkingPayload,
     requestHeaders,
-    outputChannel,
     onTransportSummary,
   };
 }

@@ -2,6 +2,26 @@
 
 All notable changes to the **OpenCode Go BYOK Provider** extension are documented here.
 
+## [0.7.5] — 2026-09-08
+
+### Fixed
+
+- **`[Gateway]` `x-opencode-session` is now sent on every OpenCode request, not just chat.** OpenCode's Go docs (updated 2026-09-07) require a stable session id on all requests, and requests missing it may start erroring from 2026-09-06. Four auxiliary fetch sites hit the gateway without the header: `GET /models`, inline completions, `GET /usage` server sync, and the Manage-Provider test connection. All four now send a persisted per-installation session id; the main chat path keeps its per-conversation id. See `docs/issues/99-20260908-issue218-223-triage-dropdown-and-session-header.md`.
+
+- **`[Models]` `GET /models` is now served from cache instead of refetching on every provider poll (#222).** `ModelListFetcher.fetch()` performed a live upstream fetch on every `provideLanguageModelChatInformation` poll (VS Code polls every few hundred ms) because `MODEL_LIST_CACHE_TTL_MS` was only consulted on the failure path. The fresh snapshot is now checked before the network call; a new `invalidate()` hooks into `Refresh Models` so manual refreshes still hit the gateway. The `Models registered` log line is now emitted only when its signature changes, ending the identical-line spam. Documented in `docs/issues/94-20260908-issue222-uncached-models-poll.md`.
+
+- **`[Provider]` One shared output channel instead of one per request (#220).** The god-file split left a `createOutputChannel("OpenCode")` inside `prepareChatRequest()`, which runs per request — `createOutputChannel` registers a new Output-tab entry every call, so long sessions accumulated dozens of duplicate channels. `chatPrep` no longer creates channels; transports receive the provider's lazy singleton (disposed via `context.subscriptions`). Documented in `docs/issues/95-20260908-issue220-duplicate-output-channels.md`.
+
+- **`[Responses]` function_call / function_call_output items are now strictly paired (#216).** The gateway rejects the whole request with `No tool output found for function call <id>` when a `function_call` lost its output (history trim, lost `tool_call_id`) — and the converter even fabricated a `tool-<timestamp>` call_id that could never match. Fabricated ids are gone, and `pairResponsesFunctionCallItems()` drops orphaned calls/outputs before sending. 5 regression tests. Documented in `docs/issues/96-20260908-issue216-no-tool-output-for-function-call.md`.
+
+- **`[Responses]` Nested event payloads parse; zero-part failures now carry their own diagnostics (#217).** gpt-5.6-luna streams could end with zero extractable parts while the gateway billed completion tokens, triggering Copilot Chat's empty-response loop guard (verified: neither error string exists in our 0.7.4 VSIX). `response.output_text.delta` and reasoning events now unwrap nested payload objects (`delta.text`, `delta.content`, `text.value`, …), and after retries are exhausted a dedicated error names the token count, event stats, and the `[diag-sse-event-*]` path. The `[diag-empty-response]` dump no longer false-positives on healthy tool-call-only turns (tool calls flush in the transport's `finally`, after the diagnostic runs) — it now only fires when no healthy `finish_reason` was extracted. Documented in `docs/issues/97-20260908-issue217-luna-zero-parts-empty-response-loop.md`.
+
+- **`[Retry]` 429 responses honoring `Retry-After` are retried once transparently (#221).** Upstream Console Go rate limits are provider-side, but when the upstream names a short wait the extension now waits (capped at 30 s via `RATE_LIMIT_MAX_RETRY_AFTER_WAIT_MS`) and retries before anything is streamed — no duplicated content, no hard failure. Longer waits keep the existing actionable error. Documented in `docs/issues/98-20260908-issue221-429-retry-after.md`.
+
+### Triage
+
+- **#218 / #223 closed as triaged.** #218: VS Code's `chat.utilityModel` / `inlineChat.defaultModel` dropdowns only list natively integrated providers; BYOK vendors can't opt in — users should use **OpenCode: Configure Utility Models** (doc 32). #223: the reported `MissingSessionID` stack trace belongs to `vizards.deepseek-v4-for-copilot`, not this extension; we have always sent `x-opencode-session`. Full analysis in `docs/issues/99-20260908-issue218-223-triage-dropdown-and-session-header.md`.
+
 ## [0.7.4] — 2026-09-03
 
 ### Fixed

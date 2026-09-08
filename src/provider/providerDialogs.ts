@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { TEST_CONNECTION_TIMEOUT_MS, secretKeyFor } from "../config";
 import { getErrorMessage } from "../utils";
+import { auxiliarySessionId } from "../request/headers";
 import type { ProviderVendor } from "../providerTypes";
 import type { ProviderDefinition } from "./definitions";
 import { configureUtilityModels, toggleProviderEnabled } from "../commands/providers";
@@ -86,6 +87,8 @@ export async function testConnection(deps: DialogDeps): Promise<void> {
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
+        // Gateway enforcement (docs/go): auxiliary requests need a session id.
+        "x-opencode-session": auxiliarySessionId(deps.context),
       },
       body: JSON.stringify({
         model: deps.definition.testModelId,

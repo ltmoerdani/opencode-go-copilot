@@ -96,6 +96,9 @@ export function installVscodeMock(): void {
   module.exports = {
     ExtensionContext: class {},
     MarkdownString,
+    // getUserAgent() probes the extension's package.json for the version;
+    // returning undefined falls back to the default UA string.
+    extensions: { getExtension: () => undefined },
   };
   `,
     "utf-8",
