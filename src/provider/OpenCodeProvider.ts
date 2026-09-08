@@ -148,6 +148,9 @@ export class OpenCodeProvider implements vscode.LanguageModelChatProvider<OpenCo
 
   private async refreshMetadataAndModels(): Promise<void> {
     await clearOpenCodeModelMetadataCache(this.context);
+    // Bypass the cache-first short-circuit so "Refresh Models" always
+    // performs a real upstream fetch (issue #222).
+    this.fetcher.invalidate();
     // Pass the stored API key so the gateway sees the authenticated
     // (per-key) model list, not the anonymous default.
     const apiKey = await this.context.secrets.get(secretKeyFor(this.baseVendor));
@@ -324,9 +327,12 @@ export class OpenCodeProvider implements vscode.LanguageModelChatProvider<OpenCo
       limits,
 
       requestHeaders,
-      outputChannel,
       onTransportSummary,
     } = prepared;
+
+    // ISSUE #220: one shared channel for the provider's lifetime — the
+    // prepared-request object no longer creates a fresh channel per request.
+    const outputChannel = this.getOutputChannel();
 
     try {
       const contextWindowOutputBuffer = limits.advertisedMaxOutputTokens;
