@@ -186,3 +186,21 @@ export function sleepWithCancellation(ms: number, token: LikeCancellationToken):
     }
   });
 }
+
+/**
+ * Parse a Retry-After header value into milliseconds. Accepts delta-seconds
+ * ("2") and HTTP-dates; returns undefined for absent or malformed values.
+ * Callers are expected to cap the result (issue #221).
+ */
+export function parseRetryAfterMs(value: string | null): number | undefined {
+  if (!value) return undefined;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    return Math.round(seconds * 1000);
+  }
+  const at = Date.parse(value);
+  if (!Number.isNaN(at)) {
+    return Math.max(0, at - Date.now());
+  }
+  return undefined;
+}

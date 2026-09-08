@@ -15,7 +15,12 @@ import {
   TRANSIENT_5XX_RETRY_BASE_MS,
   TRANSIENT_5XX_RETRY_JITTER_MS,
 } from "../retry";
-import { TRANSIENT_FETCH_MAX_RETRIES, TRANSIENT_FETCH_RETRY_BASE_MS, TRANSIENT_FETCH_RETRY_JITTER_MS } from "../config";
+import {
+  TRANSIENT_FETCH_MAX_RETRIES,
+  TRANSIENT_FETCH_RETRY_BASE_MS,
+  TRANSIENT_FETCH_RETRY_JITTER_MS,
+  RATE_LIMIT_MAX_RETRY_AFTER_WAIT_MS,
+} from "../config";
 import { createUsageDataParts } from "../chatParts";
 import {
   clearContextWindowRequest,
@@ -23,7 +28,7 @@ import {
   setContextWindowOutputBufferForRequest,
 } from "../contextWindowHookBridge";
 import { formatUsageLogLine } from "../usage/usage";
-import { getErrorMessage, sleepWithCancellation } from "../utils";
+import { getErrorMessage, parseRetryAfterMs, sleepWithCancellation } from "../utils";
 import { parseServerSentEvent, isStreamTruncated } from "./sse";
 import { reportProgressPart, type RequestUsageSummary, type StreamOpenCodeResponseOptions } from "./streamParts";
 import type { TransportRequestSummary } from "../core/transport";
@@ -50,6 +55,17 @@ const STREAM_FAILURE_MAX_RETRIES = 3;
  * temperature → images) can complete within one request.
  */
 const MAX_400_PATCH_ATTEMPTS = 3;
+
+/**
+ * Read the token flag through a function boundary: aliased-condition narrowing
+ * on `options.token.isCancellationRequested` (from earlier guards in
+ * streamOpenCodeResponse) makes direct reads look constant-false to
+ * `no-unnecessary-condition` even after an await, where cancellation can
+ * actually fire.
+ */
+function cancellationRequested(token: { readonly isCancellationRequested: boolean }): boolean {
+  return token.isCancellationRequested;
+}
 
 /**
  * Core streaming engine shared by every transport: performs the HTTP POST
@@ -316,6 +332,24 @@ export async function streamOpenCodeResponse(options: StreamOpenCodeResponseOpti
     if (cancelledDuringBackoff) {
       abort("cancelled");
       throw new DOMException("Aborted", "AbortError");
+    }
+
+    // --- 429 Retry-After retry (issue #221) ---
+    // Upstream provider rate limits (Console Go) often carry Retry-After.
+    // Honor it with a single bounded wait and one retry. Nothing has been
+    // streamed at this point, so the retry cannot duplicate chat content.
+    // Waits longer than RATE_LIMIT_MAX_RETRY_AFTER_WAIT_MS are surfaced as
+    // the normal 429 error instead of silently stalling the UI.
+    for (let rateLimitAttempt = 0; rateLimitAttempt < 1; rateLimitAttempt++) {
+      if (response.status !== 429 || options.token.isCancellationRequested) break;
+      const retryAfter = parseRetryAfterMs(response.headers.get("retry-after"));
+      if (retryAfter === undefined || retryAfter > RATE_LIMIT_MAX_RETRY_AFTER_WAIT_MS) break;
+      options.output?.appendLine(`[retry] 429 rate limited; honoring Retry-After, waiting ${String(retryAfter)}ms…`);
+      await sleepWithCancellation(retryAfter, options.token);
+      if (cancellationRequested(options.token)) break;
+      response = await fetchWithTransientRetry(payload);
+      consumedErrorBody = undefined;
+      options.output?.appendLine(`[retry] Response after rate-limit wait: ${String(response.status)} ${response.statusText}`);
     }
 
     responseStatus = response.status;

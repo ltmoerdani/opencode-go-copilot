@@ -302,6 +302,9 @@ export const TRANSIENT_5XX_MAX_RETRIES = 2;
 export const TRANSIENT_5XX_RETRY_BASE_MS = 1000;
 export const TRANSIENT_5XX_RETRY_JITTER_MS = 250;
 
+/** Maximum wait the extension will honor from a 429 Retry-After header (issue #221). */
+export const RATE_LIMIT_MAX_RETRY_AFTER_WAIT_MS = 30_000;
+
 // ─── Transient network (fetch) retry for chat requests (engine.ts) ───────────
 // Mirrors the model-list fetch resilience (issue #78): a `fetch()` that *throws*
 // (undici `TypeError: fetch failed` — ECONNRESET / EAI_AGAIN / UND_ERR_CONNECT_TIMEOUT
