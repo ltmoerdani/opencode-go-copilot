@@ -105,16 +105,67 @@ export function responsesInputItemsFromMessage(message: ResponsesApiMessage): Re
     // Vision-capable OpenAI/Anthropic/Google transports handle images in tool
     // results natively via their respective request builders.
     const output = typeof message.content === "string" ? message.content : responsesToolOutput(message.content);
+    // RULES (issue #216): never fabricate a call_id. A random placeholder can
+    // never match the paired `function_call.call_id`, and the gateway rejects
+    // the entire request with `No tool output found for function call`.
+    // Unpaired outputs are dropped by {@link pairResponsesFunctionCallItems}.
+    if (!message.tool_call_id) return [];
     return [
       {
         type: "function_call_output",
-        call_id: message.tool_call_id ?? `tool-${String(Date.now())}`,
+        call_id: message.tool_call_id,
         output,
       },
     ];
   }
 
   return [];
+}
+
+/**
+ * Enforce 1:1 pairing between `function_call` and `function_call_output`
+ * items (issue #216). The Console Go upstream rejects the WHOLE request with
+ * `No tool output found for function call <id>` when a `function_call` has no
+ * matching output — e.g. after history trimming dropped the tool result, or
+ * when VS Code replays a tool message whose `tool_call_id` was lost.
+ *
+ * RULES:
+ * - A `function_call_output` whose `call_id` matches no `function_call` is
+ *   dropped (stale/orphaned result).
+ * - A `function_call` with no output is dropped too (the gateway 400s on it;
+ *   keeping it would fail the entire turn).
+ * - The first output wins if a call_id is duplicated.
+ */
+export function pairResponsesFunctionCallItems(items: Record<string, unknown>[]): Record<string, unknown>[] {
+  const callIdsWithOutput = new Set<string>();
+  const seenOutputs = new Set<string>();
+  for (const item of items) {
+    if (item.type === "function_call_output" && typeof item.call_id === "string") {
+      if (!seenOutputs.has(item.call_id)) {
+        seenOutputs.add(item.call_id);
+        callIdsWithOutput.add(item.call_id);
+      }
+    }
+  }
+  const callIdsWithCall = new Set<string>();
+  for (const item of items) {
+    if (item.type === "function_call" && typeof item.call_id === "string") {
+      callIdsWithCall.add(item.call_id);
+    }
+  }
+  const consumedOutputs = new Set<string>();
+  return items.filter((item) => {
+    const callId = item.call_id;
+    if (item.type === "function_call_output") {
+      const matched = typeof callId === "string" && callIdsWithCall.has(callId) && !consumedOutputs.has(callId);
+      if (matched) consumedOutputs.add(callId);
+      return matched;
+    }
+    if (item.type === "function_call") {
+      return typeof callId === "string" && callIdsWithOutput.has(callId);
+    }
+    return true;
+  });
 }
 
 /**

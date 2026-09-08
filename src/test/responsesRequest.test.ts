@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { buildResponsesRequestEnvelope, responsesInputItemsFromMessage } from "../responsesRequest.js";
+import { buildResponsesRequestEnvelope, pairResponsesFunctionCallItems, responsesInputItemsFromMessage } from "../responsesRequest.js";
 
 describe("buildResponsesRequestEnvelope", () => {
   it("enables server-side input truncation for long Responses sessions", () => {
@@ -153,5 +153,49 @@ describe("responsesInputItemsFromMessage", () => {
       content: "be helpful",
     });
     assert.deepEqual(items, []);
+  });
+
+  it("emits no function_call_output when tool_call_id is missing (issue #216)", () => {
+    const items = responsesInputItemsFromMessage({
+      role: "tool",
+      content: "result without an id",
+    });
+    assert.deepEqual(items, []);
+  });
+});
+
+describe("pairResponsesFunctionCallItems (issue #216)", () => {
+  it("keeps a matched function_call/function_call_output pair", () => {
+    const paired = pairResponsesFunctionCallItems([
+      { type: "function_call", id: "fc_a", call_id: "call_a", name: "f", arguments: "{}" },
+      { type: "function_call_output", call_id: "call_a", output: "ok" },
+    ]);
+    assert.equal(paired.length, 2);
+  });
+
+  it("drops a function_call whose output was trimmed", () => {
+    const paired = pairResponsesFunctionCallItems([
+      { type: "function_call", id: "fc_a", call_id: "call_a", name: "f", arguments: "{}" },
+      { role: "user", content: "hi" },
+    ]);
+    assert.deepEqual(paired, [{ role: "user", content: "hi" }]);
+  });
+
+  it("drops an output whose function_call was trimmed", () => {
+    const paired = pairResponsesFunctionCallItems([
+      { type: "function_call_output", call_id: "call_a", output: "orphan" },
+      { role: "user", content: "hi" },
+    ]);
+    assert.deepEqual(paired, [{ role: "user", content: "hi" }]);
+  });
+
+  it("keeps only the first output for a duplicated call_id", () => {
+    const paired = pairResponsesFunctionCallItems([
+      { type: "function_call", id: "fc_a", call_id: "call_a", name: "f", arguments: "{}" },
+      { type: "function_call_output", call_id: "call_a", output: "first" },
+      { type: "function_call_output", call_id: "call_a", output: "second" },
+    ]);
+    assert.equal(paired.length, 2);
+    assert.equal((paired[1] as { output: string }).output, "first");
   });
 });
