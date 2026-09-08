@@ -35,6 +35,17 @@ export class ModelListFetcher {
   async fetch(apiKey?: string, token?: vscode.CancellationToken): Promise<string[]> {
     if (token?.isCancellationRequested) return this.fallback();
 
+    // ISSUE #222: VS Code polls provideLanguageModelChatInformation every
+    // few hundred ms. Consult the fresh cached snapshot BEFORE the live
+    // fetch so each poll is local work instead of an upstream
+    // `GET /models` round-trip. A stale snapshot falls through to the
+    // live fetch + retry path below; `Refresh Models` forces a real
+    // refresh by clearing the cache first.
+    const cachedFresh = this.loadCached();
+    if (cachedFresh) {
+      return this.deps.filterAvailableModels(cachedFresh.ids);
+    }
+
     // Explicit Accept + User-Agent make this look like a legitimate API call
     // rather than an anonymous scanner. Some corporate firewalls / SSL
     // inspection proxies (Zscaler, Netskope, Fortinet) drop bare GETs that
@@ -164,6 +175,17 @@ export class ModelListFetcher {
       return this.deps.filterAvailableModels(cached.ids);
     }
     return this.deps.filterAvailableModels(this.deps.definition.fallbackModels);
+  }
+
+  /**
+   * Drop the cached snapshot (in-memory + globalState) so the next
+   * {@link fetch} performs a real upstream request. Used by the manual
+   * `Refresh Models` command, which must bypass the cache-first
+   * short-circuit added for issue #222.
+   */
+  invalidate(): void {
+    this.cached = undefined;
+    void this.deps.context.globalState.update(this.cacheKey, undefined);
   }
 
   /**

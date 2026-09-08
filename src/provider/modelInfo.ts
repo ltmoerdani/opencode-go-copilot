@@ -23,6 +23,12 @@ import {
 } from "./settings";
 import { ensureProfileSync } from "../usage/dashboard";
 
+// ISSUE #222: VS Code calls provideLanguageModelChatInformation on every UI
+// poll. Log the "Models registered" summary only when it actually changes
+// (model count, first/last id, variant) so the Output channel stays a
+// signal source instead of repeating identical lines.
+const LAST_REGISTRATION_LOG_SIGNATURE = new Map<string, string>();
+
 /**
  * Body of `provideLanguageModelChatInformation`: BYOK/secret key resolution,
  * profile registration and per-model `OpenCodeModel` assembly. Pure with
@@ -228,11 +234,15 @@ export async function provideModelChatInformation(
   // model ID so we can still debug registration issues without flooding
   // the Output channel when VS Code refreshes model info frequently.
   if (registeredCount > 0) {
-    deps.log(
-      `Models registered: count=${String(registeredCount)} provider=${deps.definition.vendor}` +
-        ` first=${firstModelId} last=${lastModelId}` +
-        (deps.definition.isAgentVariant ? " (agents)" : ""),
-    );
+    const signature =
+      `count=${String(registeredCount)} provider=${deps.definition.vendor}` +
+      ` first=${firstModelId} last=${lastModelId}` +
+      (deps.definition.isAgentVariant ? " (agents)" : "");
+    const logKey = deps.definition.isAgentVariant ? `${deps.definition.vendor}::agents` : deps.definition.vendor;
+    if (LAST_REGISTRATION_LOG_SIGNATURE.get(logKey) !== signature) {
+      LAST_REGISTRATION_LOG_SIGNATURE.set(logKey, signature);
+      deps.log(`Models registered: ${signature}`);
+    }
   }
 
   return results;
