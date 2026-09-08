@@ -106,28 +106,29 @@ The extension fetches **live model lists** on every startup from:
 
 Curated open coding models, refreshed live from the endpoint. Deprecated/legacy models (e.g. `glm-5`, `kimi-k2.5`, `minimax-m2.5`, `mimo-v2-pro`, `mimo-v2-omni`, `qwen3.5-plus`) are filtered before registration.
 
-| Model                                   |       Context | Max Output | Highlights               |
-| --------------------------------------- | ------------: | ---------: | ------------------------ |
-| `deepseek-v4-pro` / `deepseek-v4-flash` | **1,000,000** |    384,000 | 🧠 Reasoning `off`→`max` |
-| `gpt-5.6-luna`                          | **1,050,000** |    128,000 | 🛣️ `/responses` API      |
-| `grok-4.6`                              |       500,000 |    500,000 | 🧠 + 🖼️ Vision           |
-| `glm-5.3`                               | **1,000,000** |    131,072 | 🧠 Always-on thinking    |
-| `glm-5.3-flash`                         | **1,000,000** |    131,072 | 🧠 + 🖼️ Vision, cheapest |
-| `glm-5.2`                               | **1,000,000** |    131,072 | 🧠 `off`/`high`/`max`    |
-| `glm-5.1`                               |       202,752 |     32,768 | 🧠 `off`/`high`/`max`    |
-| `kimi-k3`                               | **1,048,576** |    131,072 | 🧠 + 🖼️ Vision           |
-| `kimi-k2.7-code`                        |       262,144 |    262,144 | 🧠 Always-on thinking    |
-| `kimi-k2.6`                             |       262,144 |     65,536 | 🧠 + 🖼️ Vision           |
-| `mimo-v2.5-pro` / `mimo-v2.5`           | **1,048,576** |    128,000 | 🧠 Effort `low`→`high`   |
-| `minimax-m3`                            | **1,000,000** |    131,072 | 🧠 + 🖼️ Vision           |
-| `minimax-m2.7`                          |       204,800 |    131,072 | 🧠 `on`/`off`            |
-| `qwen3.8-max` / `qwen3.8-flash`         | **1,000,000** |    131,072 | 🧠 `thinking_budget`     |
-| `qwen3.7-max`                           | **1,000,000** |     65,536 | 🧠 `thinking_budget`     |
-| `qwen3.7-plus` / `qwen3.6-plus`         | **1,000,000** |     65,536 | 🧠 + 🖼️ Vision           |
-| `hy4-preview`                           | **1,024,000** |     64,000 | 🧠 Preview               |
-| `hy3`                                   |       256,000 |    128,000 | 🧠 Text-only             |
+| Model                                   |       Context | Max Output | Highlights               | Included usage/mo |
+| --------------------------------------- | ------------: | ---------: | ------------------------ | ----------------- |
+| `deepseek-v4-pro` / `deepseek-v4-flash` | **1,000,000** |    384,000 | 🧠 Reasoning `off`→`max` | $15 / $30         |
+| `gpt-5.6-luna`                          | **1,050,000** |    128,000 | 🛣️ `/responses` API      | $15               |
+| `grok-4.6`                              |       500,000 |    500,000 | 🧠 + 🖼️ Vision           | $15               |
+| `glm-5.3`                               | **1,000,000** |    131,072 | 🧠 Always-on thinking    | $15               |
+| `glm-5.3-flash`                         | **1,000,000** |    131,072 | 🧠 + 🖼️ Vision           | $15               |
+| `glm-5.2`                               | **1,000,000** |    131,072 | 🧠 `off`/`high`/`max`    | $60               |
+| `glm-5.1`                               |       202,752 |     32,768 | 🧠 `off`/`high`/`max`    | $60               |
+| `kimi-k3`                               | **1,048,576** |    131,072 | 🧠 + 🖼️ Vision           | $15               |
+| `kimi-k2.7-code`                        |       262,144 |    262,144 | 🧠 Always-on thinking    | $60               |
+| `kimi-k2.6`                             |       262,144 |     65,536 | 🧠 + 🖼️ Vision           | $60               |
+| `mimo-v2.5-pro` / `mimo-v2.5`           | **1,048,576** |    128,000 | 🧠 Effort `low`→`high`   | $15 / $60         |
+| `minimax-m3`                            | **1,000,000** |    131,072 | 🧠 + 🖼️ Vision           | $60               |
+| `minimax-m2.7`                          |       204,800 |    131,072 | 🧠 `on`/`off`            | $60               |
+| `qwen3.8-max` / `qwen3.8-flash`         | **1,000,000** |    131,072 | 🧠 `thinking_budget`     | $15 / $30         |
+| `qwen3.7-max`                           | **1,000,000** |     65,536 | 🧠 `thinking_budget`     | $30               |
+| `qwen3.7-plus` / `qwen3.6-plus`         | **1,000,000** |     65,536 | 🧠 + 🖼️ Vision           | $60               |
+| `omen-alpha`                            |       500,000 |    128,000 | 🧠 + 🖼️ Vision           | **$100**          |
+| `hy4-preview`                           | **1,024,000** |     64,000 | 🧠 Preview               | $30               |
+| `hy3`                                   |       256,000 |    128,000 | 🧠 Text-only             | $60               |
 
-> **Usage:** most Go models include ~$60/mo of usage; `grok-4.6`, `gpt-5.6-luna`, `kimi-k3`, `qwen3.8-max`, `deepseek-v4-pro` and `mimo-v2.5-pro` include ~$15/mo. If you hit a limit, keep using the free Zen models (or enable the "Use balance" option in the Zen console).
+> **Usage:** most Go models include **$60/mo** of included usage; premium models include less (`glm-5.3`, `glm-5.3-flash`, `gpt-5.6-luna`, `grok-4.6`, `kimi-k3`, `qwen3.8-max`, `deepseek-v4-pro`, `deepseek-v4-flash-vision-exp`, `mimo-v2.5-pro` at $15/mo; `qwen3.8-flash`, `qwen3.7-max`, `deepseek-v4-flash`, `hy4-preview` at $30/mo), and `omen-alpha` includes a larger **$100/mo**. Cheaper per-token models stretch their allowance further, so request counts vary widely: the docs estimate ~226K requests/mo on Muse Spark 1.3 vs ~490 on Kimi K3. If you hit a limit, keep using the free Zen models (or enable the "Use balance" option in the Zen console).
 
 ### 🆓 OpenCode Zen free models (no payment needed)
 

@@ -25,7 +25,9 @@ const GO_MODEL_PRICING: Record<string, ModelCost | undefined> = {
   "glm-5.1": { input: 1.4, output: 4.4, cache_read: 0.26 },
   "glm-5.2": { input: 1.4, output: 4.4, cache_read: 0.26 },
   "glm-5.3": { input: 1.4, output: 4.4, cache_read: 0.26 },
-  "glm-5.3-flash": { input: 0.075, output: 0.25, cache_read: 0.015 },
+  // Official docs (opencode.ai/docs/go/#usage-limits, Sep 2026) list
+  // $0.15/$0.50 with cache $0.03 — models.dev had half that value.
+  "glm-5.3-flash": { input: 0.15, output: 0.5, cache_read: 0.03 },
   "grok-4.5": { input: 2.0, output: 6.0, cache_read: 0.3 },
   "grok-4.6": { input: 2.0, output: 6.0, cache_read: 0.5 },
   hy3: { input: 0.14, output: 0.58, cache_read: 0.035 },
