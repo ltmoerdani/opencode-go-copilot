@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import type { ModelCost } from "../models/metadata";
 import type { TransportRequestSummary } from "../core/transport";
 import { fetchGoUsage, mergeServerUsage, GO_USAGE_SYNC_TTL_MS, type GoUsageApiResponse } from "./goUsageSync";
+import { auxiliarySessionId } from "../request/headers";
 import {
   GO_LIMITS,
   GO_USAGE_LOG_KEY,
@@ -352,7 +353,7 @@ export class GoUsageTracker {
     if (this.serverUsageFetchedAt > 0 && now - this.serverUsageFetchedAt < GO_USAGE_SYNC_TTL_MS) {
       return false;
     }
-    const result = await fetchGoUsage(apiKey, fetch, undefined, this.options.resolveUsageUrl?.());
+    const result = await fetchGoUsage(apiKey, fetch, undefined, this.options.resolveUsageUrl?.(), auxiliarySessionId(this.context));
     // Pace retries after failures too — an invalid key or unreachable
     // endpoint must not hammer the API on every request.
     this.serverUsageFetchedAt = Date.now();

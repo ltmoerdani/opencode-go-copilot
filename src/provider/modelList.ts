@@ -9,6 +9,7 @@ import {
 import { getErrorMessage } from "../utils";
 import { sleep } from "../utils";
 import { getUserAgent, isTransientFetchError, type ModelListEntry, type ModelListResponse, type ProviderDefinition } from "./definitions";
+import { auxiliarySessionId } from "../request/headers";
 import { resolveBaseVendor } from "../providerTypes";
 
 /**
@@ -54,6 +55,10 @@ export class ModelListFetcher {
     const headers: Record<string, string> = {
       "User-Agent": getUserAgent(),
       Accept: "application/json",
+      // Gateway enforcement: every OpenCode request needs a stable session id
+      // (docs/go, 2026-09-07). /models has no conversation — use the
+      // persisted per-installation id.
+      "x-opencode-session": auxiliarySessionId(this.deps.context),
     };
     if (apiKey) {
       headers["Authorization"] = `Bearer ${apiKey}`;

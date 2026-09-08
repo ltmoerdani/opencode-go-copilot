@@ -49,6 +49,19 @@ Resolution: close with an explanation and point the reporter at
 `OpenCode Go: Diagnostics` (which proves our requests carry the session
 header) in case their report was a mix-up between two installed extensions.
 
+### Follow-up (2026-09-08): auxiliary requests were missing the header
+
+While the main chat path always sent `x-opencode-session`, an audit triggered
+by the same gateway enforcement found **four auxiliary fetch sites** hitting
+the gateway without it: `GET /models` (`ModelListFetcher`), inline completions
+(`ChatCompletionEngine`), `GET /usage` (`fetchGoUsage`), and the
+Manage-Provider test connection. The Go docs (updated 2026-09-07) now state
+the requirement explicitly, and per the reporter's note requests missing the
+header may error from 2026-09-06. Fixed in commit `8c138e2`: all four now send
+a persisted per-installation session id (`auxiliarySessionId()`,
+globalState-backed) — no conversation context exists for these requests, so a
+stable installation id is the correct affinity key.
+
 ## Lessons Learned
 
 1. Extension-version fields in issue templates report the _installed set_, not

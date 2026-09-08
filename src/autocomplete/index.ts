@@ -32,6 +32,7 @@ import {
   SETTING_INLINE_SUGGESTIONS_CHAT_INPUT,
 } from "../config";
 import { toFiniteNumber } from "../utils";
+import { auxiliarySessionId } from "../request/headers";
 import { bumpCompletionUsage, matchesAcceptance, utcDayStart, type CompletionUsageDay } from "./usage";
 
 export {
@@ -121,6 +122,7 @@ export function registerInlineCompletions(context: vscode.ExtensionContext, deps
       const keyed = new ChatCompletionEngine({
         chatCompletionsUrl: deps.chatCompletionsUrl,
         apiKey,
+        sessionId: auxiliarySessionId(context),
         timeoutMs: readNumberSetting(INLINE_TIMEOUT_MS_SETTING, DEFAULT_INLINE_TIMEOUT_MS, 500, 15_000),
         log: (msg) => {
           log(msg);

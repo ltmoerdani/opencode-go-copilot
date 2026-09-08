@@ -17,6 +17,8 @@ export interface ChatCompletionEngineOptions {
   /** Gateway chat-completions URL (provider-specific). */
   chatCompletionsUrl: string;
   apiKey: string;
+  /** Stable session id for the gateway's x-opencode-session enforcement. */
+  sessionId?: string;
   timeoutMs?: number;
   log?: (msg: string) => void;
 }
@@ -77,6 +79,9 @@ export class ChatCompletionEngine implements CompletionEngine {
         headers: {
           Authorization: `Bearer ${this.options.apiKey}`,
           "Content-Type": "application/json",
+          // Gateway enforcement (docs/go): all OpenCode requests need a
+          // session id; completions share the persisted per-installation id.
+          ...(this.options.sessionId ? { "x-opencode-session": this.options.sessionId } : {}),
         },
         body: JSON.stringify(body),
         signal: AbortSignal.any([signal, AbortSignal.timeout(this.timeoutMs)]),
