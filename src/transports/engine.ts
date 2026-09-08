@@ -525,6 +525,20 @@ export async function streamOpenCodeResponse(options: StreamOpenCodeResponseOpti
         });
         return;
       }
+      // ISSUE #217: retries exhausted with zero usable parts while the
+      // gateway billed completion tokens — give the reporter a targeted
+      // message that names the likely cause and the diagnostic path.
+      if (extractedPartCount === 0 && usageSummary.completionTokens && usageSummary.completionTokens > 0) {
+        const zeroPartError = new OpenCodeRequestError(
+          `${options.providerDisplayName} consumed ${String(usageSummary.completionTokens)} completion tokens but returned no parsable content (${String(totalEvents)} events, ${String(totalBytes)} bytes${localRequestId ? `, request ${localRequestId}` : ""}).`,
+          `${options.providerDisplayName} generated output in a format this extension could not parse. Enable "Debug Reasoning" for this provider, retry once (the upstream may recover), and if it repeats, attach the [diag-sse-event-*] lines from the OpenCode Output channel to a bug report.`,
+        );
+        emitSummary(totalBytes, totalEvents, {
+          errorMessage: zeroPartError.message,
+          rateLimitSummary,
+        });
+        throw zeroPartError;
+      }
       const requestError = new OpenCodeRequestError(
         `${options.providerDisplayName} response stream ended before completion (no [DONE] or finish_reason after ${String(totalBytes)} bytes / ${String(totalEvents)} events${localRequestId ? `, request ${localRequestId}` : ""}).`,
         `${options.providerDisplayName} stopped sending data before the response was complete (the connection closed unexpectedly). Your message may be cut off — try sending it again; a single resend usually succeeds. If this keeps happening, check your connection, VPN, or firewall.`,

@@ -56,7 +56,12 @@ export function normalizeResponsesStreamEvent(data: unknown): unknown {
   }
 
   if (eventType === "response.output_text.delta") {
-    const delta = firstStringRaw(data.delta, data.text, data.output_text_delta);
+    // Some gateways nest the payload (delta: { text } or text: { value })
+    // instead of sending a flat string; handle both so models like Luna
+    // don't come through as a zero-part stream (issue #217).
+    const nestedDelta = isRecord(data.delta) ? firstStringRaw(data.delta.text, data.delta.content, data.delta.value) : undefined;
+    const nestedText = isRecord(data.text) ? firstStringRaw(data.text.value, data.text.content) : undefined;
+    const delta = firstStringRaw(data.delta, nestedDelta, data.text, nestedText, data.output_text_delta);
     return delta
       ? {
           choices: [
@@ -393,7 +398,10 @@ function normalizeResponsesUsage(usage: unknown): Record<string, unknown> | unde
  * until the gateway relays plaintext reasoning. See `src/thinking/muse.ts`.
  */
 function extractResponsesReasoningText(data: Record<string, unknown>): string {
-  const direct = firstStringRaw(data.delta, data.text, data.summary_text, data.output_text_delta);
+  // Nested shapes (delta: { text }) appear alongside the flat ones on newer
+  // gateways — accept both (issue #217).
+  const nestedDelta = isRecord(data.delta) ? firstStringRaw(data.delta.text, data.delta.thinking, data.delta.summary) : undefined;
+  const direct = firstStringRaw(data.delta, nestedDelta, data.text, data.summary_text, data.output_text_delta);
   if (direct) {
     return direct;
   }
