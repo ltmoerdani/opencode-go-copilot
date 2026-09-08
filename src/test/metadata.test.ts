@@ -32,9 +32,9 @@ describe("fallbackModelMetadata — kimi-k2.7-code (issue #25)", () => {
     assert.equal(meta?.temperature, false);
   });
 
-  it("reports correct context/output limits (models.dev: 256000 / 262144)", () => {
+  it("reports correct context/output limits (models.dev: 262144 / 262144)", () => {
     const meta = fallbackModelMetadata("kimi-k2.7-code", GO_VENDOR);
-    assert.equal(meta?.contextWindow, 256000);
+    assert.equal(meta?.contextWindow, 262144);
     assert.equal(meta.maxOutputTokens, 262144);
   });
 
@@ -98,10 +98,10 @@ describe("VISION_CAPABLE_MODELS", () => {
     assert.ok(VISION_CAPABLE_MODELS.has("mimo-v2.5-pro"));
   });
 
-  it("does NOT include text-only models (deepseek-v4-flash, hy3-preview, big-pickle)", () => {
+  it("does NOT include text-only models (deepseek-v4-flash, hy3, big-pickle)", () => {
     assert.ok(!VISION_CAPABLE_MODELS.has("deepseek-v4-flash"));
     assert.ok(!VISION_CAPABLE_MODELS.has("deepseek-v4-pro"));
-    assert.ok(!VISION_CAPABLE_MODELS.has("hy3-preview"));
+    assert.ok(!VISION_CAPABLE_MODELS.has("hy3"));
     assert.ok(!VISION_CAPABLE_MODELS.has("big-pickle"));
   });
 

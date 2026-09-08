@@ -13,27 +13,39 @@ export const MODEL_LIMITS_BY_PROVIDER: Record<ProviderVendor, Record<string, Bas
     // OpenCode Go caps completion at 131072 even though models.dev still lists
     // output: 384000 — the gateway rejects larger values with HTTP 400 (#171).
     "deepseek-v4-flash": { contextWindow: 1000000, maxOutputTokens: 131072 },
+    "deepseek-v4-flash-vision-exp": { contextWindow: 1000000, maxOutputTokens: 384000 },
     "deepseek-v4-pro": { contextWindow: 1000000, maxOutputTokens: 384000 },
     "mimo-v2.5": { contextWindow: 1000000, maxOutputTokens: 128000 },
     "mimo-v2.5-pro": { contextWindow: 1048576, maxOutputTokens: 128000 },
     "mimo-v2-omni": { contextWindow: 262144, maxOutputTokens: 128000 },
     "mimo-v2-pro": { contextWindow: 1048576, maxOutputTokens: 128000 },
-    "kimi-k2.7-code": { contextWindow: 256000, maxOutputTokens: 262144 },
+    "kimi-k2.7-code": { contextWindow: 262144, maxOutputTokens: 262144 },
     "kimi-k2.6": { contextWindow: 262144, maxOutputTokens: 65536 },
     "kimi-k2.5": { contextWindow: 262144, maxOutputTokens: 65536 },
+    "kimi-k3": { contextWindow: 1048576, maxOutputTokens: 131072 },
+    "glm-5.3-flash": { contextWindow: 1000000, maxOutputTokens: 131072 },
+    "glm-5.3": { contextWindow: 1000000, maxOutputTokens: 131072 },
+    "glm-5.2": { contextWindow: 1000000, maxOutputTokens: 131072 },
     "glm-5.1": { contextWindow: 202752, maxOutputTokens: 32768 },
     "glm-5": { contextWindow: 202752, maxOutputTokens: 32768 },
-    "minimax-m3": { contextWindow: 512000, maxOutputTokens: 131072 },
+    "minimax-m3": { contextWindow: 1000000, maxOutputTokens: 131072 },
     "minimax-m2.7": { contextWindow: 204800, maxOutputTokens: 131072 },
     "minimax-m2.5": { contextWindow: 204800, maxOutputTokens: 65536 },
-    "minimax-m2.1": { contextWindow: 204800, maxOutputTokens: 131072 },
-    "minimax-m2": { contextWindow: 204800, maxOutputTokens: 131072 },
+    "qwen3.8-max": { contextWindow: 1000000, maxOutputTokens: 131072 },
+    "qwen3.8-flash": { contextWindow: 1000000, maxOutputTokens: 131072 },
     "qwen3.7-max": { contextWindow: 1000000, maxOutputTokens: 65536 },
-    "qwen3.7-plus": { contextWindow: 262144, maxOutputTokens: 65536 },
-    "qwen3.6-plus": { contextWindow: 262144, maxOutputTokens: 65536 },
+    "qwen3.7-plus": { contextWindow: 1000000, maxOutputTokens: 65536 },
+    "qwen3.6-plus": { contextWindow: 1000000, maxOutputTokens: 65536 },
     "qwen3.5-plus": { contextWindow: 262144, maxOutputTokens: 65536 },
     "gpt-5.6-luna": { contextWindow: 1050000, maxOutputTokens: 128000 },
-    "hy3-preview": { contextWindow: 256000, maxOutputTokens: 64000 },
+    "grok-4.6": { contextWindow: 500000, maxOutputTokens: 500000 },
+    "grok-4.5": { contextWindow: 500000, maxOutputTokens: 500000 },
+    hy3: { contextWindow: 256000, maxOutputTokens: 128000 },
+    "hy4-preview": { contextWindow: 1024000, maxOutputTokens: 64000 },
+    "omen-alpha": { contextWindow: 500000, maxOutputTokens: 128000 },
+    "longcat-2.0": { contextWindow: 1000000, maxOutputTokens: 131072 },
+    "ox-alpha-free": { contextWindow: 1000000, maxOutputTokens: 131072 },
+    "muse-spark-1.3-contributor": { contextWindow: 1048576, maxOutputTokens: 131072 },
     "muse-spark-1.2-contributor": { contextWindow: 1048576, maxOutputTokens: 131072 },
   },
   [ZEN_VENDOR]: {
@@ -93,6 +105,8 @@ export const MODEL_LIMITS_BY_PROVIDER: Record<ProviderVendor, Record<string, Bas
 export const MODELS_WITHOUT_TEMPERATURE = new Set([
   // Kimi K2.7-code: Moonshot API returns "invalid temperature: only 1 is allowed"
   "kimi-k2.7-code",
+  // Kimi K3: models.dev lists temperature: false (rejects non-default temperature)
+  "kimi-k3",
 ]);
 
 /** Models known to accept image input even without live modality metadata. */
@@ -103,12 +117,17 @@ export const VISION_CAPABLE_MODELS = new Set([
   "kimi-k2.7-code",
   "kimi-k2.6",
   "kimi-k2.5",
+  "kimi-k3",
+  "glm-5.3-flash",
   "glm-5.1",
   "glm-5",
+  "qwen3.8-flash",
+  "qwen3.8-max",
   "mimo-v2.5",
   "mimo-v2.5-pro",
   "mimo-v2-omni",
   "mimo-v2-pro",
+  "deepseek-v4-flash-vision-exp",
   "claude-opus-4-7",
   "claude-opus-4-6",
   "claude-opus-4-5",
@@ -137,11 +156,16 @@ export const VISION_CAPABLE_MODELS = new Set([
   "gpt-5-codex",
   "gpt-5-nano",
   "grok-build-0.1",
+  "grok-4.6",
+  "grok-4.5",
   "gpt-5.6-luna",
+  "omen-alpha",
+  "ox-alpha-free",
   // Muse Spark 1.2 — models.dev lists image/video/pdf/audio input modalities
   // for both variants; without these entries an offline fallback snapshot
   // reports imageInput: false and VS Code strips attachments before they
   // reach the provider (#183).
+  "muse-spark-1.3-contributor",
   "muse-spark-1.2-contributor",
   "muse-spark-1.2-contributor-free",
 ]);

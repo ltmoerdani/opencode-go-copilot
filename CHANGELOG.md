@@ -2,6 +2,12 @@
 
 All notable changes to the **OpenCode Go BYOK Provider** extension are documented here.
 
+## [Unreleased]
+
+### Fixed
+
+- **`[Models]` Bundled offline fallback data synced to models.dev (2026-09-08 snapshot).** Three drift classes fixed in the offline-only tables: (1) stale context limits — `kimi-k2.7-code` 256K → 262,144, `minimax-m3` / `qwen3.6-plus` / `qwen3.7-plus` → 1M (models.dev now differentiates Go vs Zen and the bundled Go values matched the Zen ones; the deliberately-capped `deepseek-v4-flash` 131,072 output and Go `minimax-m2.5` 65,536 output are kept); (2) wrong static pricing in the usage tracker — `mimo-v2.5-pro` and `deepseek-v4-pro` were 2–4x over-reported, `mimo-v2-omni` / `deepseek-v4-flash` under-reported, and `kimi-k3` ($3/$15) fell back to a 6x-under-estimating generic price; the table was rewritten from the current registry and 15 new models added; (3) the Go `fallbackModels` catalog still listed the retired `hy3-preview` and pre-June models — refreshed to the 27-model curated active set. Stale tests referencing `hy3-preview` updated to `hy3`. Documented in `docs/issues/100-20260908-bundled-model-data-sync.md`.
+
 ## [0.7.5] — 2026-09-08
 
 ### Fixed

@@ -80,7 +80,7 @@ describe("model registry — data-driven transport routing", () => {
   });
 
   it("falls back to chat-completions for unknown models", () => {
-    assert.equal(resolveModelRouting("hy3-preview", goProvider).endpointKind, "chat-completions");
+    assert.equal(resolveModelRouting("hy3", goProvider).endpointKind, "chat-completions");
     assert.equal(resolveModelRouting("big-pickle", zenProvider).endpointKind, "chat-completions");
   });
 
@@ -108,7 +108,7 @@ describe("model registry — data-driven thinking family", () => {
   it("returns null for families without a dedicated strategy", () => {
     assert.equal(thinkingFamily("claude-sonnet-4-6"), null);
     assert.equal(thinkingFamily("gemini-3.5-flash"), null);
-    assert.equal(thinkingFamily("hy3-preview"), null);
+    assert.equal(thinkingFamily("hy3"), null);
     assert.equal(thinkingFamily("unknown-model"), null);
   });
 });

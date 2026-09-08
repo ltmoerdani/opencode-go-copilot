@@ -50,11 +50,11 @@ describe("goUsageTracker", () => {
     it("uses bundled snapshot pricing for deepseek-v4-flash", () => {
       const cost = estimateCost("deepseek-v4-flash", 1000, 500, 200);
       // billablePrompt = 800
-      // pricing: { input: 0.14, output: 0.28, cache_read: 0.003 }
-      // 800 * 0.14/1M  = 0.000112
-      // 500 * 0.28/1M  = 0.00014
-      // 200 * 0.003/1M = 0.0000006
-      assert.equal(cost, 0.0002526);
+      // pricing: { input: 0.22, output: 0.66, cache_read: 0.007 }
+      // 800 * 0.22/1M  = 0.000176
+      // 500 * 0.66/1M  = 0.00033
+      // 200 * 0.007/1M = 0.0000014
+      assert.equal(cost, 0.0005074);
     });
 
     it("estimates a conservative cost for an unknown model with no resolver", () => {

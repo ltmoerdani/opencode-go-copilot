@@ -187,7 +187,7 @@ describe("FallbackThinking — generic payload (issue #207)", () => {
   });
 
   it("other unknown-family models emit no thinking fields", () => {
-    const payload = thinkingProviderFor("hy3-preview").buildPayload(defaultSettings);
+    const payload = thinkingProviderFor("hy3").buildPayload(defaultSettings);
     assert.deepEqual(payload, {});
   });
 });

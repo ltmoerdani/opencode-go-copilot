@@ -1,6 +1,25 @@
 # 🧠 OPENCODE COPILOT CHAT DEVLOG
 
-**Branch:** `fix/issues-216-223-batch` | **Updated:** 2026-09-08 Asia/Jakarta | **Current Phase:** v0.7.5 batch verified — 5 fixes + 2 triages (#216/#217/#220/#221/#222 + #218/#223), manual + automated verification passed, pending PR.
+**Branch:** `chore/models-dev-data-sync` | **Updated:** 2026-09-08 Asia/Jakarta | **Current Phase:** bundled model data sync — limits, pricing, fallback catalog synced to models.dev (2026-09-08); full lint gate pass, pending PR.
+
+---
+
+## ✅ Bundled Model Data Sync — models.dev Drift — 2026-09-08
+
+**Scope:** audit all bundled offline fallback tables against the live models.dev registry (curl + python3 diff of `api.json`, 2026-09-08) and fix three drift classes. Forensics via `git log -S` on every drifted value before changing it.
+
+| Area                                         | Root cause                                                                                                                                                                                                                                                      | Fix                                                                                                                                                                     |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Context limits (`modelTables.ts`)            | models.dev now differentiates Go vs Zen per model (`minimax-m3` Go 1M/Zen 512K; `qwen3.6-plus` Go 1M/Zen 262K) — bundled Go values matched the **Zen** ones (issue #02 contamination pattern). `qwen3.7-plus` 262K was a copy-paste (`1c26fd1`), never verified | `kimi-k2.7-code` 256K→262,144; `minimax-m3`, `qwen3.6-plus`, `qwen3.7-plus` → 1M. Kept deliberate: `deepseek-v4-flash` out 131,072 (#171), Go `minimax-m2.5` out 65,536 |
+| Usage pricing (`usage/pricing.ts`)           | Table drifted from registry: `mimo-v2.5-pro`/`deepseek-v4-pro` 2–4x over-reported, `mimo-v2-omni`/`deepseek-v4-flash` under-reported, `kimi-k3` missing (fallback under-reported 6x)                                                                            | Full rewrite from the 2026-09-08 Go snapshot; 15 new models added; `minimax-m2.1`/`m2` removed; `hy3-preview` → `hy3`                                                   |
+| Fallback catalog (`provider/definitions.ts`) | Go `fallbackModels` still listed `hy3-preview` + pre-June models, contradicting the README's deprecated-filtering promise                                                                                                                                       | Refreshed to the 27-model curated active set (8 upstream-deprecated removed)                                                                                            |
+| Stale tests                                  | 3 test files still referenced `hy3-preview` (passing only via the routing catch-all)                                                                                                                                                                            | Updated to `hy3`; `goUsageTracker` bundled-pricing lock updated to new deepseek-v4-flash values                                                                         |
+
+**Verification:** `npm run lint` — all 7 checks, 462/462 tests. Unit-test locks caught 2 stale expectations during the change (metadata kimi context, usage tracker pricing) — both updated as part of the sync.
+
+**Caveats:** 1M context limits not live-verified against the gateway with oversized requests (models.dev is OpenCode's own registry but can lag — #171 precedent). `DEFAULT_INLINE_MODEL` is still upstream-deprecated `qwen3.5-plus` — flagged, unchanged.
+
+Docs: `docs/issues/100-20260908-bundled-model-data-sync.md`, CHANGELOG `[Unreleased]`.
 
 ---
 
